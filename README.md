@@ -3,9 +3,9 @@ Simple CRUD database application for managing cars in car rental company. The ap
 
 # Repository structure
 The application is built in a three-tier architecture, so we created separate branches for every tier of the application:
- * [`database`](../database) - data tier,
- * [`car-rental-server`](../car-rental-server) - application tier,
- * [`car-rental-app`](../car-rental.app) - presentation tier.
+ * [`database`](../../tree/database) - data tier,
+ * [`car-rental-server`](../../tree/car-rental-server) - application tier,
+ * [`car-rental-app`](../../tree/car-rental.app) - presentation tier.
 You can also find [documentation](documentation.pdf) in branch main.
 
 # Prerequisites
