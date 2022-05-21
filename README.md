@@ -84,18 +84,18 @@ You can download Node.js [HERE](https://nodejs.org/en/download/).<br>
 1. Install serve after installing Node.js<br>
 run `npm install -g serve`
 2. Install dependencies.<br>
-run `npm install`<br>
+run `npm install` from car-rental-app project root directory<br>
 This will download all project dependencies into `node_modules` directory.
 3. Build project<br>
-run `npm run build`<br>
+run `npm run build` from car-rental-app project root directory<br>
 This will build the project into `build` directory.
 4. From now, you can serve the application using:<br>
-`serve -s build`
+`serve -s build` from car-rental-app project root directory
 
 # Running the application
 1. `mysqld --console` - starts MySQL database server.
-2. `java -jar car-rental-0.0.1-SNAPSHOT.jar` - starts appliaction server.
-3. `serve -s build` - serves the web application.
+2. `java -jar build/libs/car-rental-0.0.1-SNAPSHOT.jar` from car-rental-server project root directory - starts appliaction server.
+3. `serve -s build` from car-rental-app project root directory - serves the web application.
 
 To log into the application, open [`localhost:3000/login`](http://localhost:3000/login) to log in as customer or [`localhost:3000/admin`](http://localhost:3000/admin) to log in as employee. Application creates default user with login `admin@example.com` and password `admin`. You can use these credentials to log into both panels. You can create new account using [`login`](http://localhost:3000/login) panel, but by default created user will have group id 0, which means that it's customer account and it has only access to [`login`](http://localhost:3000/login) panel. To give user access to [`admin`](http://localhost:3000/admin) panel, you need to do it manually in database:
 1. Start database server<br>
