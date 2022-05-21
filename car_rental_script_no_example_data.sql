@@ -1,0 +1,189 @@
+ drop database car_rental;
+ create database car_rental;
+ use car_rental;
+
+create table MODELE( 
+	ID_MODELU varchar(20) primary key unique,
+    MARKA varchar(20),
+    MODEL_SAMOCHODU varchar(20),
+    CENA_WYP float,
+    SPALANIE float,
+    MIEJSCA int unsigned,
+    DRZWI int unsigned,
+    POJEMNOSC_ZBIORNIKA int unsigned,
+    TYP_PALIWA varchar(10),
+    POJEMNOSC_SILNIKA int unsigned,
+    MOC int unsigned,
+    RODZAJ_KAROSERII varchar(10)
+);
+
+create table WYPOZYCZALNIE(
+	ID_WYPOZYCZALNI int unsigned primary key unique auto_increment,
+    MIASTO varchar(30),
+    ADRES varchar(100)
+);
+
+create table SAMOCHODY(
+	ID_SAMOCHODU int unsigned primary key unique auto_increment,
+    ID_WYPOZYCZALNI int unsigned,
+    foreign key (ID_WYPOZYCZALNI) references WYPOZYCZALNIE(ID_WYPOZYCZALNI),
+    ID_MODELU varchar(20),
+    foreign key (ID_MODELU) references MODELE(ID_MODELU),
+    NR_REJESTRACYJNY varchar(20) unique,
+    DATA_PRODUKCJI date,
+    DATA_REJESTRACJI date,
+    DATA_PRZEGLADU date,
+    PRZEBIEG int unsigned
+);
+
+create table KLIENCI(
+	ID_KLIENTA int unsigned primary key unique auto_increment,
+    IMIE varchar(30),
+    NAZWISKO varchar(30),
+    PESEL varchar(11) unique,
+    NR_TEL varchar(9) unique,
+    EMAIL varchar(100) unique
+);
+
+create table WYPOZYCZENIA(
+	ID_WYPOZYCZENIA int unsigned primary key unique auto_increment,
+    ID_KLIENTA int unsigned,
+    foreign key (ID_KLIENTA) references KLIENCI(ID_KLIENTA),
+    ID_SAMOCHODU int unsigned,
+    foreign key (ID_SAMOCHODU) references SAMOCHODY(ID_SAMOCHODU),
+    STAN_WYP varchar(20),
+    DATA_WYP date,
+    DATA_ZWROTU date
+);
+
+create table LOG_WYPOZYCZENIA(
+	LOG_ID int unsigned primary key unique auto_increment,
+    DATA_LOGU date,
+    ID_WYPOZYCZENIA int unsigned,
+    foreign key (ID_WYPOZYCZENIA) references WYPOZYCZENIA(ID_WYPOZYCZENIA),
+    ID_KLIENTA int unsigned,
+    foreign key (ID_KLIENTA) references KLIENCI(ID_KLIENTA),
+    ID_SAMOCHODU int unsigned,
+    foreign key (ID_SAMOCHODU) references SAMOCHODY(ID_SAMOCHODU),
+    STAN_WYP varchar(20),
+    DATA_WYP date,
+    DATA_ZWROTU date
+);
+
+create table UZYTKOWNICY(
+	LOGIN varchar(30) primary key unique,
+    USER_GROUP_ID int unsigned,
+    PASSWORD_HASH varchar(256)
+);
+
+create trigger LOG_WYPOZYCZENIA_INS_TRIGGER 
+after insert on WYPOZYCZENIA
+for each row 
+	insert into LOG_WYPOZYCZENIA
+    values (NULL, sysdate(), new.ID_WYPOZYCZENIA, new.ID_KLIENTA, new.ID_SAMOCHODU,
+			new.STAN_WYP, new.DATA_WYP, new.DATA_ZWROTU);
+
+create trigger LOG_WYPOZYCZENIA_UP_TRIGGER 
+after update on WYPOZYCZENIA
+for each row 
+	insert into LOG_WYPOZYCZENIA
+    values (NULL, sysdate(), new.ID_WYPOZYCZENIA, new.ID_KLIENTA, new.ID_SAMOCHODU,
+			new.STAN_WYP, new.DATA_WYP, new.DATA_ZWROTU);
+
+create or replace view DOSTEPNE_SAMOCHODY as
+select 
+    distinct S.ID_SAMOCHODU AS "ID_SAM",
+    CASE WA.STAN_WYP WHEN 'ZAKONCZONE' THEN 'DOSTEPNY' 
+                   WHEN 'ZAPLANOWANE' THEN 'DOSTEPNY/ZAREZERWOWANY'
+                   WHEN 'AKTUALNE' THEN 'NIEDOSTEPNY'
+                   END
+    AS "STATUS",
+    WE.MIASTO AS "MIASTO",
+    M.MARKA AS "MARKA",
+    M.MODEL_SAMOCHODU AS "MODEL",
+    S.DATA_PRODUKCJI AS "DATA_PRODUKCJI",
+    M.CENA_WYP AS "CENA",
+    M.SPALANIE AS "SPALANIE",
+    M.MIEJSCA AS "L_MIEJSC",
+    M.DRZWI AS "L_DRZWI",
+    M.POJEMNOSC_ZBIORNIKA AS "POJEMNOSC_ZBIORNIKA",
+    M.TYP_PALIWA AS "TYP_PALIWA",
+    M.POJEMNOSC_SILNIKA AS "POJEMNOSC_SILNIKA",
+    M.MOC AS "MOC",
+    M.RODZAJ_KAROSERII AS "RODZAJ_KAROSERII"
+FROM SAMOCHODY S
+JOIN WYPOZYCZENIA WA
+ON WA.ID_SAMOCHODU = S.ID_SAMOCHODU
+JOIN MODELE M 
+ON S.ID_MODELU = M.ID_MODELU
+JOIN WYPOZYCZALNIE WE
+ON WE.ID_WYPOZYCZALNI = S.ID_WYPOZYCZALNI
+WHERE S.ID_SAMOCHODU NOT IN (
+SELECT 
+    DISTINCT S.ID_SAMOCHODU AS "ID_SAM"
+FROM SAMOCHODY S
+JOIN WYPOZYCZENIA WA
+ON WA.ID_SAMOCHODU = S.ID_SAMOCHODU
+WHERE WA.STAN_WYP = 'AKTUALNE'
+);
+
+create or replace view NIEDOSTEPNE_SAMOCHODY as
+select 
+    distinct S.ID_SAMOCHODU AS "ID_SAM",
+    CASE WA.STAN_WYP WHEN 'ZAKONCZONE' THEN 'DOSTEPNY' 
+                   WHEN 'ZAPLANOWANE' THEN 'DOSTEPNY/ZAREZERWOWANY'
+                   WHEN 'AKTUALNE' THEN 'NIEDOSTEPNY'
+                   END
+    AS "STATUS",
+    WA.DATA_ZWROTU AS "PLANOWANA_DATA_ZWROTU",
+    WE.MIASTO AS "MIASTO",
+    M.MARKA AS "MARKA",
+    M.MODEL_SAMOCHODU AS "MODEL",
+    S.DATA_PRODUKCJI AS "DATA_PRODUKCJI",
+    M.CENA_WYP AS "CENA",
+    M.SPALANIE AS "SPALANIE",
+    M.MIEJSCA AS "L_MIEJSC",
+    M.DRZWI AS "L_DRZWI",
+    M.POJEMNOSC_ZBIORNIKA AS "POJEMNOSC_ZBIORNIKA",
+    M.TYP_PALIWA AS "TYP_PALIWA",
+    M.POJEMNOSC_SILNIKA AS "POJEMNOSC_SILNIKA",
+    M.MOC AS "MOC",
+    M.RODZAJ_KAROSERII AS "RODZAJ_KAROSERII"
+FROM SAMOCHODY S
+JOIN WYPOZYCZENIA WA
+ON WA.ID_SAMOCHODU = S.ID_SAMOCHODU
+JOIN MODELE M 
+ON S.ID_MODELU = M.ID_MODELU
+JOIN WYPOZYCZALNIE WE
+ON WE.ID_WYPOZYCZALNI = S.ID_WYPOZYCZALNI
+WHERE WA.STAN_WYP = 'AKTUALNE';
+
+CREATE OR REPLACE VIEW WYPOZYCZONE_SAMOCHODY AS
+SELECT 
+    DISTINCT S.ID_SAMOCHODU AS "ID_SAM",
+    CASE WA.STAN_WYP WHEN 'AKTUALNE' THEN 'WYPOZYCZONY' 
+    END
+    AS "STATUS",
+    WE.MIASTO AS "MIASTO",
+    M.MARKA AS "MARKA",
+    M.MODEL_SAMOCHODU AS "MODEL",
+     S.NR_REJESTRACYJNY AS "NR_REJESTRACYJNY",
+    S.DATA_PRODUKCJI AS "DATA_PRODUKCJI",
+    M.CENA_WYP AS "CENA",
+    K.ID_KLIENTA AS "ID_KLIENTA",
+    K.IMIE AS "IMIE",
+    K.NAZWISKO AS "NAZWISKO",
+    WA.DATA_WYP AS "DATA_WYPOZYCZENIA",
+    WA.DATA_ZWROTU AS "DATA_ZWROTU"
+FROM WYPOZYCZENIA WA
+JOIN KLIENCI K
+ON K.ID_KLIENTA = WA.ID_KLIENTA
+JOIN SAMOCHODY S
+ON WA.ID_SAMOCHODU = S.ID_SAMOCHODU
+JOIN MODELE M 
+ON S.ID_MODELU = M.ID_MODELU
+JOIN WYPOZYCZALNIE WE
+ON WE.ID_WYPOZYCZALNI = S.ID_WYPOZYCZALNI
+WHERE WA.STAN_WYP = 'AKTUALNE'
+ORDER BY WA.DATA_ZWROTU;
+
